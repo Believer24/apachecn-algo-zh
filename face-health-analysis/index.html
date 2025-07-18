@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>面部健康分析</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- Optimized TensorFlow.js loading with latest stable versions -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.15.0/dist/tf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/face-landmarks-detection@1.0.5/dist/face-landmarks-detection.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh@0.4.1633559619/face_mesh.js"></script>
+    <!-- Fallback model for better compatibility -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/blazeface@0.0.7/dist/blazeface.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>面部健康分析</h1>
+        <p class="disclaimer">免责声明：本工具仅供教育目的，不能替代专业医疗建议。如有健康问题，请咨询专业医生。</p>
+
+        <div class="camera-container">
+            <video id="video" playsinline autoplay></video>
+            <canvas id="canvas"></canvas>
+            <div id="photoPreview" class="photo-preview" style="display: none;">
+                <img id="previewImage" alt="拍摄的照片预览">
+                <div class="preview-controls">
+                    <button id="retakeButton" class="btn-secondary">重新拍摄</button>
+                    <button id="confirmButton" class="btn-primary">确认分析</button>
+                </div>
+            </div>
+            <div id="analysisProgress" class="analysis-progress">
+                <div class="progress-bar"></div>
+            </div>
+            <div class="controls">
+                <button id="startButton">开始分析</button>
+                <button id="captureButton" disabled>拍摄照片</button>
+                <button id="diagnosticButton" class="diagnostic-btn">🔧 摄像头诊断</button>
+            </div>
+            <div id="modelStatus" class="model-status">状态: 准备就绪</div>
+            <div id="modelLoadingProgress" class="model-loading-progress" style="display: none;">
+                <div class="loading-text">正在加载AI模型...</div>
+                <div class="loading-bar">
+                    <div class="loading-fill"></div>
+                </div>
+                <div class="loading-details">初始化中...</div>
+            </div>
+        </div>
+
+        <div class="results-container" id="resultsContainer" style="display: none;">
+            <h2>分析结果</h2>
+            <div class="result-item">
+                <h3>面色分析</h3>
+                <p id="colorAnalysis"></p>
+                <div class="color-chart-container">
+                    <canvas id="colorChart"></canvas>
+                </div>
+            </div>
+            <div class="result-item">
+                <h3>眼部分析</h3>
+                <p id="eyeAnalysis"></p>
+                <div class="eye-metrics">
+                    <div class="metric" id="eyeRedness">
+                        <span class="metric-label">眼部发红指数:</span>
+                        <div class="metric-bar">
+                            <div class="metric-value"></div>
+                        </div>
+                    </div>
+                    <div class="metric" id="eyeDryness">
+                        <span class="metric-label">眼部干涩指数:</span>
+                        <div class="metric-bar">
+                            <div class="metric-value"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="result-item">
+                <h3>面部对称性</h3>
+                <p id="symmetryAnalysis"></p>
+                <div class="symmetry-chart-container">
+                    <canvas id="symmetryChart"></canvas>
+                </div>
+            </div>
+            <div class="result-item">
+                <h3>皮肤状况</h3>
+                <p id="skinAnalysis"></p>
+                <div class="skin-metrics">
+                    <div class="metric" id="skinTexture">
+                        <span class="metric-label">皮肤纹理指数:</span>
+                        <div class="metric-bar">
+                            <div class="metric-value"></div>
+                        </div>
+                    </div>
+                    <div class="metric" id="skinHydration">
+                        <span class="metric-label">皮肤水分指数:</span>
+                        <div class="metric-bar">
+                            <div class="metric-value"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="result-item">
+                <h3>综合建议</h3>
+                <p id="recommendations"></p>
+            </div>
+        </div>
+
+        <div class="history-container" id="historyContainer" style="display: none;">
+            <h2>历史记录</h2>
+            <div class="history-list" id="historyList">
+                <!-- 历史记录将在这里动态添加 -->
+            </div>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>

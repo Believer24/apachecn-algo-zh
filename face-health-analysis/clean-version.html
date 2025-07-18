@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI面部健康分析 - 清洁版</title>
+    
+    <!-- TensorFlow.js and AI Models -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.15.0/dist/tf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/face-landmarks-detection@1.0.5/dist/face-landmarks-detection.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh@0.4.1633559619/face_mesh.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/blazeface@0.0.7/dist/blazeface.min.js"></script>
+    
+    <!-- PDF Export Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    
+    <link rel="stylesheet" href="style-clean.css">
+</head>
+<body>
+    <div class="container">
+        <h1>AI面部健康分析</h1>
+        <div class="subtitle">基于深度学习的智能面部健康评估系统</div>
+        
+        <div class="status" id="status">准备就绪 - 点击开始分析</div>
+        <div class="model-status" id="modelStatus">AI模型: 准备加载</div>
+        
+        <div class="progress-container" id="progressContainer" style="display: none;">
+            <div class="progress-bar" id="progressBar"></div>
+        </div>
+        
+        <div class="camera-section">
+            <video id="video" autoplay playsinline></video>
+            <canvas id="canvas"></canvas>
+            <canvas id="landmarkCanvas" class="landmark-overlay"></canvas>
+        </div>
+        
+        <div class="controls">
+            <button onclick="initializeAI()" id="initBtn">初始化AI模型</button>
+            <button onclick="startCamera()" id="startBtn" disabled>开启摄像头</button>
+            <button onclick="captureAndAnalyze()" id="captureBtn" disabled>智能分析</button>
+            <button onclick="toggleLandmarks()" id="landmarkBtn" disabled>显示面部特征点</button>
+            <button onclick="toggleTongueMode()" id="tongueBtn" disabled style="background: #e67e22;">👅 舌诊模式</button>
+            <button onclick="exportToPDF()" id="exportBtn" disabled style="background: #8e44ad;">📄 导出PDF</button>
+        </div>
+        
+        <div id="results" style="display:none;">
+            <h2>🤖 AI分析结果</h2>
+            
+            <div class="result-section">
+                <h3>🎯 面部检测结果</h3>
+                <div id="detectionResults"></div>
+            </div>
+            
+            <div class="result-section">
+                <h3>🎨 中西医面色健康分析</h3>
+                <div id="colorAnalysis"></div>
+                <div id="tcmColorAnalysis" class="tcm-analysis" style="margin-top: 15px;"></div>
+                <div id="westernColorAnalysis" class="western-analysis" style="margin-top: 15px;"></div>
+                <div id="facialMapping" class="facial-mapping" style="margin-top: 15px;"></div>
+            </div>
+            
+            <div class="result-section">
+                <h3>👁️ 眼部健康评估</h3>
+                <div id="eyeAnalysis"></div>
+                <div class="metric">
+                    <span class="metric-label">眼部发红指数:</span>
+                    <div class="metric-bar"><div class="metric-value" id="eyeRedness"></div></div>
+                    <span id="eyeRedValue">0%</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">眼部疲劳指数:</span>
+                    <div class="metric-bar"><div class="metric-value" id="eyeFatigue"></div></div>
+                    <span id="eyeFatValue">0%</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">眨眼频率:</span>
+                    <div class="metric-bar"><div class="metric-value" id="blinkRate"></div></div>
+                    <span id="blinkRateValue">0%</span>
+                </div>
+            </div>
+            
+            <div class="result-section">
+                <h3>⚖️ 面部对称性分析</h3>
+                <div id="symmetryAnalysis"></div>
+                <div class="metric">
+                    <span class="metric-label">对称性评分:</span>
+                    <div class="metric-bar"><div class="metric-value" id="symmetryScore"></div></div>
+                    <span id="symValue">0%</span>
+                </div>
+            </div>
+            
+            <div class="result-section">
+                <h3>🌟 皮肤质量评估</h3>
+                <div id="skinAnalysis"></div>
+                <div class="metric">
+                    <span class="metric-label">皮肤纹理指数:</span>
+                    <div class="metric-bar"><div class="metric-value" id="skinTexture"></div></div>
+                    <span id="skinTexValue">0%</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">皮肤光泽度:</span>
+                    <div class="metric-bar"><div class="metric-value" id="skinGlow"></div></div>
+                    <span id="skinGlowValue">0%</span>
+                </div>
+            </div>
+            
+            <div class="result-section">
+                <h3>💡 智能健康建议</h3>
+                <div id="recommendations"></div>
+            </div>
+            
+            <div class="result-section" id="tongueAnalysisSection" style="display:none;">
+                <h3>👅 中医舌诊分析</h3>
+                <div id="tongueAnalysisResults"></div>
+                <div id="tongueCoatingAnalysis" class="tcm-analysis" style="margin-top: 15px;"></div>
+                <div id="tongueBodyAnalysis" class="tcm-analysis" style="margin-top: 15px;"></div>
+                <div id="tongueConstitutionAnalysis" class="medical-section" style="margin-top: 15px;"></div>
+            </div>
+            
+            <div class="disclaimer">
+                <strong>⚠️ 免责声明:</strong> 本AI分析工具仅供教育和娱乐目的，不能替代专业医疗诊断。如有健康问题，请咨询专业医生。
+            </div>
+        </div>
+    </div>
+
+    <script src="script-clean.js"></script>
+</body>
+</html>

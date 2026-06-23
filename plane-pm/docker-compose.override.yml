@@ -1,0 +1,49 @@
+# Drop-in override that adds the GitLab<->Plane bridge to Plane's stack.
+#
+# Plane manages its own docker-compose.yaml (setup.sh overwrites it on upgrade),
+# so we never edit it. Instead, merge this file with it. From the plane-pm/ dir:
+#
+#   docker compose \
+#     -f plane-app/docker-compose.yaml \
+#     -f docker-compose.override.yml \
+#     up -d --build bridge
+#
+# Relative paths below (./bridge) resolve against THIS file's directory (plane-pm/).
+#
+# NETWORKING: a single `docker compose -f a -f b` invocation merges everything
+# into one project sharing one default network, so `bridge` can reach Plane's
+# `api` by name and Plane can reach `http://bridge:8000`. If your Plane compose
+# pins services to a *named* network, uncomment the `networks:` blocks below and
+# set <plane_network> to the network Plane's `api` service uses
+# (find it with: docker inspect <plane-api-container> -f '{{json .NetworkSettings.Networks}}').
+
+services:
+  bridge:
+    build: ./bridge
+    image: gitlab-plane-bridge:local
+    container_name: plane-gitlab-bridge
+    env_file:
+      - ./bridge/.env
+    depends_on:
+      - api
+    volumes:
+      - bridge_data:/data
+      # Mount project mappings read-only so you can edit without rebuilding:
+      - ./bridge/config/projects.yml:/app/config/projects.yml:ro
+    ports:
+      - "8765:8000"   # host:container — GitLab posts webhooks here
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/healthz')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    # networks:
+    #   - <plane_network>
+
+volumes:
+  bridge_data:
+
+# networks:
+#   <plane_network>:
+#     external: true

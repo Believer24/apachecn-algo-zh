@@ -1,0 +1,21 @@
+# GitLab <-> Plane project mappings. This file is the source of truth at boot:
+# each entry is upserted into the project_mapping table on startup.
+#
+# - gitlab_project_id: numeric id of the GitLab project (Project > Settings > General).
+# - plane_project_id:  UUID of the Plane project (visible in the project URL / API).
+# - plane_project_identifier: the short prefix Plane assigns (e.g. PROJ -> PROJ-123).
+# - state_group_map: OPTIONAL. Maps a Plane state *group* to a concrete state *name*
+#   in that project for MR-driven transitions. If omitted, the bridge picks the
+#   default state of the group (falling back to the first state in the group).
+# - label_sync: whether to mirror labels for this project.
+
+projects:
+  - gitlab_project_id: 42
+    plane_project_id: "00000000-0000-0000-0000-000000000000"
+    plane_project_identifier: "PROJ"
+    state_group_map:
+      unstarted: "Todo"
+      started: "In Progress"
+      completed: "Done"
+      cancelled: "Cancelled"
+    label_sync: true
